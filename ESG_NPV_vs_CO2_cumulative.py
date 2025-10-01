@@ -79,7 +79,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
         columns={"TotalValue_NoUpgrade": "PackageNPV"}
     )
 
-    # avoid divide-by-zero and ensure numeric types
+
     sub["CO2_10yr_tons"] = pd.to_numeric(sub["CO2_10yr_tons"], errors="coerce").fillna(0.0)
     sub["PackageNPV"] = pd.to_numeric(sub["PackageNPV"], errors="coerce").fillna(0.0)
 
@@ -89,7 +89,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
     sub["Cumulative_CO2"] = sub["CO2_10yr_tons"].cumsum()
     sub["Cumulative_NPV_m€"] = sub["PackageNPV"].cumsum() / 1e6
 
-    # safety: if empty, return quickly
+ 
     if sub.empty:
         raise ValueError("No data for selected yield label")
 
@@ -103,20 +103,20 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
     idx_mid = (sub["Cumulative_CO2"] - mid_co2).abs().idxmin()
     cumu_mid = (float(sub.loc[idx_mid, "Cumulative_CO2"]), float(sub.loc[idx_mid, "Cumulative_NPV_m€"]))
 
-    # Improved NPV Neutral: find first crossing of cumulative NPV through zero (positive -> non-positive)
+    # Improved NPV Neutral:
     cum_npv = sub["Cumulative_NPV_m€"].to_numpy(dtype=float)
     cum_co2 = sub["Cumulative_CO2"].to_numpy(dtype=float)
     cumu_neutral = None
 
-    # find first index where cumulative NPV <= 0
+    
     nonpos_indices = np.where(cum_npv <= 0)[0]
     if nonpos_indices.size > 0:
         i = int(nonpos_indices[0])
         if i == 0:
-            # first point is non-positive -> neutral at first CO2 point (or zero)
+         
             cumu_neutral = (cum_co2[0], 0.0)
         else:
-            # interpolate between i-1 (positive) and i (non-positive) to get more precise CO2 where NPV==0
+
             y1, y2 = cum_npv[i - 1], cum_npv[i]
             x1, x2 = cum_co2[i - 1], cum_co2[i]
             if y2 != y1:
@@ -126,7 +126,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
                 x_zero = x1
             cumu_neutral = (float(x_zero), 0.0)
     else:
-        # no non-positive value found -> no neutral crossing within cumulative range
+        
         cumu_neutral = None
 
     cumu_co2_max = (float(sub["Cumulative_CO2"].iloc[-1]), float(sub["Cumulative_NPV_m€"].iloc[-1]))
@@ -142,7 +142,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
     ax.scatter([cumu_mid[0]], [cumu_mid[1]], color="black", s=70, marker="P")
     ax.annotate("NPV Mid", xy=cumu_mid, xytext=(6, -12), textcoords="offset points")
 
-    # Plot interpolated neutral point (if found) and annotate (ensures it can appear before mid)
+    
     if cumu_neutral is not None:
         ax.scatter([cumu_neutral[0]], [cumu_neutral[1]], color="black", s=70, marker="P")
         ax.annotate("NPV Neutral", xy=cumu_neutral, xytext=(6, 6), textcoords="offset points")
@@ -154,7 +154,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
     ax.set_ylabel("Net Present Value of Packages (millions €)")
     ax.set_title(f"NPV of Packages versus CO₂ Saved — yields 6%, 7%, 8% (highlighting {rep_yield_label})")
 
-    # also plot the 6% and 8% cumulative curves in the background for comparison
+    
     for yl in ("6%", "8%"):
         if yl == rep_yield_label:
             continue
@@ -178,7 +178,7 @@ def plot_cumulative_package(sub_df: pd.DataFrame, out_dir: Path, rep_yield_label
             label=f"{yl} (compare)",
         )
 
-    # show legend if comparison lines were added
+   
     if any(sub_df["Yield"].isin(["6%", "8%"])):
         ax.legend(loc="upper left", bbox_to_anchor=(1.02, 1))
     ax.axhline(0, color="gray", linewidth=0.7)
